@@ -1,0 +1,11 @@
+{
+    "files.autoSave": "onWindowChange",
+    "editor.formatOnSave": true,
+    "prettier.packageManager": "yarn",
+    "editor.fontLigatures": null,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true // ファイル保存時にESLintでフォーマット
+    },
+    "typescript.tsdk": "",
+    "typescript.locale": "en"
+}

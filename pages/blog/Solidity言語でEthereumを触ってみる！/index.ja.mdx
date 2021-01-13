@@ -1,0 +1,116 @@
+---
+title: Solidity言語でEthereumを触ってみる！
+date: "2020-8-14"
+---
+
+# 1. はじめに
+
+Ethereum を預けたり取り出したりすることが可能なスマートコントラクトを作る
+テストネットのイーサリアムファウセットを使ってイーサを受け取り、
+金庫のようなコントラクトを作成する手順について、またそれに付随する知識を書き留める
+
+[注意]
+実際のメインネットにプログラムはあげないようにしてください
+
+# 2. 作成環境
+
+- MacBook Pro (16-inch, 2019)
+  プロセッサ　 2.3 GHz 8 コア Intel Core i9
+  メモリ 16 GB 2667 MHz DDR4
+
+- Metamask(Ethereum wallet)
+  Ropsten テストネットワークを使用しテスト用のトークンを入手するためのウォレット。Google chrome の拡張機能としてインストール。外部所有アカウント(EOA)と呼ばれる。
+
+- Remix (Solidity IDE)
+  　様々なバージョンの Solidity のコンパイラが使用可能。Solidity はバージョンによって書き方が異なる場合が多いため人気が高い。今回は solidity compiler v0.6.6 を使用する。
+
+# 3. テスト用イーサファウセット作成
+
+## 3.1 Ethereum ウォレットの作成
+
+ウォレットには、google chrome の拡張機能である Metamask(https://metamask.io) を使用する。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/8a3c848e-2f76-8608-52a3-fc61a8d2a78e.png)
+
+## 3.2 テスト用イーサを入手する。
+
+作成したコントラクトを動かすためには Gas(手数料)が必要であるため、テスト用イーサを入手する。MetaMask Ropsten Ether Faucet 1ether を faucet に request しテスト用イーサを取得する。
+(https://faucet.metamask.io/)
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/e5006303-8700-01fe-9795-252672888e00.png)
+
+また、Deposit した際の Faucet と Metamask のトランザクションの詳細を確認することができる。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/bb1ae03a-839c-9a76-4efb-6e2c0d4a986f.png)
+
+##3.3 コントラクトの作成
+高級言語 solidity v0.6.6 を使用してコントラクトを作成する。下図が作成したプログラムである。
+
+```Faucet.sol
+1 pragma solidity ^0.6.6;
+2
+3 contract Faucet(){
+4     function withdraw(uint withdraw_amount) public {
+5         //引き出し額を制限する(0.1ETHまで)
+6         require(withdraw_amount<=100000000000000000)
+7
+8         //リクエストしたアドレス元にその金額を送金する
+9         msg.sender.transfer(withdraw_amount);
+10     }
+11     //入金を受け入れる
+12     receive() external payable{}
+13     fallback() external payable{}
+14}
+```
+
+このコードは、単純なコントラクトへの入金、引き出しをするコントラクトである。
+4 行目の withdraw 関数はコントラクトに入金されているイーサを 1\*10^17wei まで出金しリクエスト元に送られる。12 行目は入金を受け入れる。13 行目の fallback 関数という、コントラクトを起動したトランザクションが、コントラクト内のいずれの関数を指定しなかった場合、または関数を指定しない場合、またはデータを含んでいなかった場合に呼び出される。今回の場合は何も処理をしない。
+
+このコントラクトを solc(solidity のコンパイラ)でバイトコードにコンパイルする。
+
+##3.4 コントラクトのデプロイ
+イーサリアムネットワークで使用するためにはコントラクトを「登録(Deploy)」する必要がある。ブロックチェーンにコントラクトを登録するためには、宛先がゼロアドレス(\*1)である特別なトランザクションを作成する必要がある。トランザクションを作成すると Gas が発生する。
+
+(\*1)アドレス(0x0000000000000000000000000000000000000000)をゼロアドレスと言い、コントラクトを Deploy する際に使用される、特別なアドレス。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/603ded74-01eb-9b5e-582c-2596cdd1132f.png)
+
+Confirm を押すとコントラクトの登録を実行し、ウォレットから Gas が支払われる。
+
+## 3.5 コントラクトへの入金
+
+デプロイしたコントラクトにイーサを入金する。デプロイしたコントラクトはネットワーク上にアドレスを持ち、そのアドレスにイーサを入金(deposit)する。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/777f9d28-38f8-a8d3-69d0-f4497b775977.png)
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/e553054f-ec9d-82af-d0e8-9c43c51f9c29.png)
+
+上図では 0.5ETH 送金しているが、Gas(手数料)が必要なため、実際にかかる費用は 0.500126ETH となっている。実際にトランザクションが実行されたかどうかは Etherscan(https://ropsten.etherscan.io/) にて確認することが可能である。
+
+<img
+  width="1260"
+  alt="スクリーンショット 2020-04-14 11.49.09.png"
+  src="https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/fb298107-0af5-8a14-0ead-52735934b7a4.png"
+></img>
+
+## 3.6 コントラクトから出金
+
+コントラクトの withdraw 関数を呼び出し、トランザクションを作成する。Remix からトランザクションを構築し MetaMask が承認する。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/909621cd-7171-c883-16c2-606a0f92ec24.png)
+
+Withdraw 関数が実行されると、コントラクトにある分までのイーサを出金できる。上図の例では 1\*10^17 wei を指定し、実行している。トランザクションが作成され、承認されるとウォレットに入金される。
+
+![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/382669/9bd6fd1f-96ea-7fa1-8b9e-48bb8277646e.png)
+
+# 5. まとめ
+
+Solidity を使ってコントラクトを作成し、コントラクトに入出金するまでをまとめた。EOA がトランザクションを作成しコントラクトを実行できるが、自律的にコントラクトが実行されることはない。今回は単純なコントラクトだが実際に使っていくにはどのようなことに注意して書いていく必要があるのかを調査していきたい
+
+# 6. 参考文献
+
+[1] Mastering Ethereum (O’REILLY)
+[2] Ethereum
+[https://ethereum.org/ja/]
+[3] (solidity v0.6.6 Document)
+[https://solidity.readthedocs.io/en/v0.6.6/index.html]
